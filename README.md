@@ -1,14 +1,29 @@
-# OpenAI Assistants - KreUI
-Construído integralmente com o GPT-5 Codex através de prompting iterativo.
+# OpenAI Assistants - KrêUI
+Programado com o Codex – o agente de código da OpenAI – exclusivamente via prompts no modelo gpt-5-codex-high.
 
 
-Widget de chat pronto para Next.js 13+ (App Router) com integração à OpenAI Assistants API. Design responsivo com Tailwind CSS, suporte a Markdown, histórico persistido no navegador e indicadores de estado para experiência próxima a ferramentas como Typebot.
+Widget de chat construído em Next.js 15 (App Router) com integração à OpenAI Assistants API. Design responsivo com Tailwind CSS, suporte a Markdown, histórico persistido no navegador e indicadores de estado para experiência próxima a ferramentas como Typebot. Confira o demo em: https://openai-chat-client.vercel.app.
 
 ## Requisitos
-- Node.js 18+
-- Next.js 13 ou superior (App Router)
-- Tailwind CSS
+- Node.js >= 18.18
+- Next.js 15 (App Router)
+- pnpm, npm ou yarn para gerir dependências
 - Conta e credenciais da OpenAI Assistants API
+
+## Stack principal
+- Next.js 15.5.4 e React 18.2
+- TypeScript 5.4, ESLint 8.57.0
+- Tailwind CSS 3.4 + @tailwindcss/typography
+- OpenAI SDK 4.52.0 (Assistants API beta)
+- Zod para validação de payloads
+- react-markdown + remark-gfm + rehype-sanitize
+- lucide-react para ícones
+
+## Capturas de tela
+
+![Widget em desktop](public/images/kreui-desktop.svg)
+![Popup de boas-vindas](public/images/kreui-popup.svg)
+![Experiência móvel](public/images/kreui-mobile.svg)
 
 ## Instalação
 ```bash
