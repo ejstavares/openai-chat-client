@@ -81,8 +81,11 @@ export default function ChatWidget({
   const [popupConfig, setPopupConfig] = useState<{ message: string; delay: number } | null>(null);
   const [popupSuppressed, setPopupSuppressed] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [mobileViewportHeight, setMobileViewportHeight] = useState<number | null>(null);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const ongoingRequestRef = useRef<AbortController | null>(null);
+  const bodyOverflowRef = useRef<string | '__unset__' | null>(null);
   const storageMessageKey = `${storageKey}:messages`;
   const storageThreadKey = `${storageKey}:thread`;
   const storageAssistantKey = `${storageKey}:assistant`;
@@ -230,24 +233,91 @@ export default function ChatWidget({
     }
   }, [threadId, storageThreadKey]);
 
+  useEffect(() => () => {
+    ongoingRequestRef.current?.abort();
+  }, []);
+
   useEffect(() => {
     if (!isBrowser) return;
 
     const mediaQuery = window.matchMedia('(max-width: 640px)');
-    const handleChange = (event: MediaQueryListEvent) => {
-      setIsMobileViewport(event.matches);
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      const matches = 'matches' in event ? event.matches : mediaQuery.matches;
+      setIsMobileViewport(matches);
     };
 
-    setIsMobileViewport(mediaQuery.matches);
+    handleChange(mediaQuery);
 
     if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
+      const listener = (event: MediaQueryListEvent) => handleChange(event);
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
     }
 
-    mediaQuery.addListener(handleChange);
-    return () => mediaQuery.removeListener(handleChange);
+    const legacyListener = (event: MediaQueryListEvent) => handleChange(event);
+    mediaQuery.addListener(legacyListener);
+    return () => mediaQuery.removeListener(legacyListener);
   }, []);
+
+  useEffect(() => {
+    if (!isBrowser || !isMobileViewport) {
+      setMobileViewportHeight(null);
+      return;
+    }
+
+    const visualViewport = window.visualViewport ?? null;
+
+    const updateHeight = () => {
+      const height = visualViewport?.height ?? window.innerHeight;
+      setMobileViewportHeight(Math.round(height));
+    };
+
+    updateHeight();
+
+    window.addEventListener('resize', updateHeight);
+    window.addEventListener('orientationchange', updateHeight);
+    visualViewport?.addEventListener('resize', updateHeight);
+
+    return () => {
+      window.removeEventListener('resize', updateHeight);
+      window.removeEventListener('orientationchange', updateHeight);
+      visualViewport?.removeEventListener('resize', updateHeight);
+    };
+  }, [isMobileViewport]);
+
+  useEffect(() => {
+    if (!isBrowser) return;
+
+    if (isFloating && isMobileViewport && isOpen) {
+      if (bodyOverflowRef.current === null) {
+        const current = document.body.style.overflow;
+        bodyOverflowRef.current = current && current.length > 0 ? current : '__unset__';
+      }
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        if (bodyOverflowRef.current !== null) {
+          if (bodyOverflowRef.current === '__unset__') {
+            document.body.style.removeProperty('overflow');
+          } else {
+            document.body.style.overflow = bodyOverflowRef.current;
+          }
+          bodyOverflowRef.current = null;
+        } else {
+          document.body.style.removeProperty('overflow');
+        }
+      };
+    }
+
+    if (bodyOverflowRef.current !== null) {
+      if (bodyOverflowRef.current === '__unset__') {
+        document.body.style.removeProperty('overflow');
+      } else {
+        document.body.style.overflow = bodyOverflowRef.current;
+      }
+      bodyOverflowRef.current = null;
+    }
+  }, [isFloating, isMobileViewport, isOpen]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -277,6 +347,10 @@ export default function ChatWidget({
     setIsLoading(true);
     setError(null);
 
+    const controller = new AbortController();
+    ongoingRequestRef.current?.abort();
+    ongoingRequestRef.current = controller;
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -288,6 +362,7 @@ export default function ChatWidget({
           threadId,
           assistantId: resolvedAssistantId ?? undefined,
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -315,6 +390,9 @@ export default function ChatWidget({
         return [...updated, ...assistantMessages];
       });
     } catch (err) {
+      if (controller.signal.aborted) {
+        return;
+      }
       console.error(err);
       setError(err instanceof Error ? err.message : 'Ocorreu um erro inesperado ao enviar a mensagem.');
       setMessages((prev) =>
@@ -324,6 +402,9 @@ export default function ChatWidget({
       );
     } finally {
       setIsLoading(false);
+      if (ongoingRequestRef.current === controller) {
+        ongoingRequestRef.current = null;
+      }
     }
   }, [inputValue, isLoading, resolvedAssistantId, threadId]);
 
@@ -384,12 +465,19 @@ export default function ChatWidget({
         ? 'max-[640px]:bottom-4 max-[640px]:right-4'
         : 'max-[640px]:bottom-4 max-[640px]:left-4'
       : null,
-    isFloating && isMobileViewport && isOpen ? 'items-stretch max-[640px]:inset-0 max-[640px]:p-0' : null
+    isFloating && isMobileViewport && isOpen
+      ? 'items-stretch max-[640px]:inset-0 max-[640px]:p-0'
+      : null
   );
 
   const floatingSectionStyle = isFloating
     ? (isMobileViewport
-        ? undefined
+        ? mobileViewportHeight
+          ? ({
+              height: `${mobileViewportHeight}px`,
+              maxHeight: `${mobileViewportHeight}px`,
+            } as CSSProperties)
+          : undefined
         : ({
             height: CHAT_HEIGHT,
             maxHeight: CHAT_HEIGHT,
@@ -437,7 +525,7 @@ export default function ChatWidget({
             containerClasses,
             isFloating && !isMobileViewport ? 'w-full max-w-sm' : null,
             isFloating && isMobileViewport
-              ? 'w-full max-w-full max-[640px]:h-[100dvh] max-[640px]:max-h-[100dvh] max-[640px]:rounded-none'
+              ? 'w-full max-w-full max-[640px]:h-full max-[640px]:max-h-full max-[640px]:rounded-none max-[640px]:pb-[env(safe-area-inset-bottom)]'
               : null
           )}
           style={floatingSectionStyle}

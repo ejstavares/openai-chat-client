@@ -24,7 +24,7 @@ export default function ChatHeader({
     <header
       className={clsx(
         'relative overflow-hidden rounded-t-[32px] border-b border-white/10 px-6 py-5 text-white',
-        'max-[640px]:rounded-none',
+        'max-[640px]:rounded-none max-[640px]:pt-[calc(env(safe-area-inset-top)+1.25rem)] max-[640px]:pb-5',
         'bg-gradient-to-r from-primary via-secondary to-accent shadow-[inset_0_-1px_0_rgba(255,255,255,0.2)]'
       )}
     >

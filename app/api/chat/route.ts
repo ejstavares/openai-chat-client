@@ -41,14 +41,29 @@ const extractTextFromMessage = (message: any) => {
 };
 
 const getClientIdentifier = (request: NextRequest) => {
-  const header =
-    request.headers.get('x-forwarded-for') ??
-    request.headers.get('x-real-ip') ??
-    request.headers.get('cf-connecting-ip') ??
-    request.headers.get('true-client-ip');
-  if (header) {
-    return header.split(',')[0]!.trim();
+  const headerNamePreference = [
+    'x-forwarded-for',
+    'x-real-ip',
+    'cf-connecting-ip',
+    'true-client-ip',
+    'x-vercel-forwarded-for',
+  ] as const;
+
+  for (const headerName of headerNamePreference) {
+    const value = request.headers.get(headerName);
+    if (value) {
+      return value.split(',')[0]!.trim();
+    }
   }
+
+  const forwarded = request.headers.get('forwarded');
+  if (forwarded) {
+    const match = forwarded.split(';').find((part) => part.trim().toLowerCase().startsWith('for='));
+    if (match) {
+      return match.split('=')[1]!.replace(/"/g, '').split(',')[0]!.trim();
+    }
+  }
+
   return 'anonymous';
 };
 

@@ -7,11 +7,9 @@ export default function HomePage() {
         <span className="inline-flex rounded-full bg-[#e1efff] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#0454a0]">
           Kre+
         </span>
-        <h1 className="mt-6 text-4xl font-semibold text-chat-text">
-          Assistente virtual integrado com a plataforma Kre+
-        </h1>
+        <h1 className="mt-6 text-4xl font-semibold text-chat-text">OpenAI Assistants - KreUI</h1>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#616E85]">
-          Este projeto demonstra como incorporar um widget de chat com o Assistants API da OpenAI mantendo a estética visual da Kre+.
+          Integração do widget OpenAI Assistants - KreUI com a estética visual da Kre+.
           Adapte o componente para qualquer página do seu site em minutos, com personalização de cores, textos e posição.
         </p>
       </section>

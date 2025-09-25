@@ -1,4 +1,4 @@
-# Chat IA GPT – Widget de Conversa com OpenAI Assistants
+# OpenAI Assistants - KreUI
 Construído integralmente com o GPT-5 Codex através de prompting iterativo.
 
 
