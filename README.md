@@ -1,4 +1,6 @@
 # Chat IA GPT – Widget de Conversa com OpenAI Assistants
+Construído integralmente com o GPT-5 Codex através de prompting iterativo.
+
 
 Widget de chat pronto para Next.js 13+ (App Router) com integração à OpenAI Assistants API. Design responsivo com Tailwind CSS, suporte a Markdown, histórico persistido no navegador e indicadores de estado para experiência próxima a ferramentas como Typebot.
 
