@@ -80,6 +80,7 @@ export default function ChatWidget({
   const [resolvedAssistantId, setResolvedAssistantId] = useState<string | null>(assistantId ?? null);
   const [popupConfig, setPopupConfig] = useState<{ message: string; delay: number } | null>(null);
   const [popupSuppressed, setPopupSuppressed] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const storageMessageKey = `${storageKey}:messages`;
@@ -230,6 +231,25 @@ export default function ChatWidget({
   }, [threadId, storageThreadKey]);
 
   useEffect(() => {
+    if (!isBrowser) return;
+
+    const mediaQuery = window.matchMedia('(max-width: 640px)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsMobileViewport(event.matches);
+    };
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
     container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
@@ -352,16 +372,28 @@ export default function ChatWidget({
     className
   );
 
-  const floatingWrapperClasses = clsx('fixed z-50 flex flex-col items-end gap-3', {
-    'bottom-8 right-8': position === 'bottom-right',
-    'bottom-8 left-8': position === 'bottom-left',
-  });
+  const floatingWrapperClasses = clsx(
+    'fixed z-50 flex flex-col gap-3',
+    isFloating && (!isMobileViewport || !isOpen) ? 'items-end' : null,
+    {
+      'bottom-8 right-8': position === 'bottom-right',
+      'bottom-8 left-8': position === 'bottom-left',
+    },
+    isFloating && isMobileViewport && !isOpen
+      ? position === 'bottom-right'
+        ? 'max-[640px]:bottom-4 max-[640px]:right-4'
+        : 'max-[640px]:bottom-4 max-[640px]:left-4'
+      : null,
+    isFloating && isMobileViewport && isOpen ? 'items-stretch max-[640px]:inset-0 max-[640px]:p-0' : null
+  );
 
   const floatingSectionStyle = isFloating
-    ? ({
-        height: CHAT_HEIGHT,
-        maxHeight: CHAT_HEIGHT,
-      } as CSSProperties)
+    ? (isMobileViewport
+        ? undefined
+        : ({
+            height: CHAT_HEIGHT,
+            maxHeight: CHAT_HEIGHT,
+          } as CSSProperties))
     : undefined;
 
   const floatingButtonClasses = clsx(
@@ -401,9 +433,13 @@ export default function ChatWidget({
 
       {(!isFloating || isOpen) && (
         <section
-          className={clsx(containerClasses, {
-            'w-full max-w-sm': isFloating,
-          })}
+          className={clsx(
+            containerClasses,
+            isFloating && !isMobileViewport ? 'w-full max-w-sm' : null,
+            isFloating && isMobileViewport
+              ? 'w-full max-w-full max-[640px]:h-[100dvh] max-[640px]:max-h-[100dvh] max-[640px]:rounded-none'
+              : null
+          )}
           style={floatingSectionStyle}
           role="complementary"
           aria-label="Widget de chat com assistente"
