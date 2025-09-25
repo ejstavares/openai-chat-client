@@ -41,11 +41,15 @@ const extractTextFromMessage = (message: any) => {
 };
 
 const getClientIdentifier = (request: NextRequest) => {
-  const header = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip');
+  const header =
+    request.headers.get('x-forwarded-for') ??
+    request.headers.get('x-real-ip') ??
+    request.headers.get('cf-connecting-ip') ??
+    request.headers.get('true-client-ip');
   if (header) {
     return header.split(',')[0]!.trim();
   }
-  return request.ip ?? 'anonymous';
+  return 'anonymous';
 };
 
 export async function POST(request: NextRequest) {
