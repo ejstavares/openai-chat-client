@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --chat-primary-color: #0454a0;
+  --chat-secondary-color: #2370bb;
+  --chat-accent-color: #2bb071;
+  --chat-background-color: #f8fafd;
+  --chat-surface-color: #ffffff;
+  --chat-text-color: #0d1421;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--chat-text-color);
+  background: linear-gradient(180deg, #f8fafd 0%, #ffffff 100%);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
