@@ -21,9 +21,9 @@ Widget de chat construído em Next.js 15 (App Router) com integração à OpenAI
 
 ## Capturas de tela
 
-![Widget em desktop](public/images/kreui-desktop.svg)
-![Popup de boas-vindas](public/images/kreui-popup.svg)
-![Experiência móvel](public/images/kreui-mobile.svg)
+![Widget em desktop](public/images/kreui-desktop.png)
+![Popup de boas-vindas](public/images/kreui-popup.jpg)
+![Experiência móvel](public/images/kreui-mobile.jpg)
 
 ## Instalação
 ```bash

@@ -1,5 +1,9 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
+import clsx from 'clsx';
+import { useEffect, useState } from 'react';
 import ChatWidget from '@/components/chat/ChatWidget';
 
 const features = [
@@ -85,27 +89,99 @@ const techStack = [
 
 const screenshots = [
   {
-    title: 'Experiência desktop',
-    description: 'Janela flutuante com gradientes Krê+, botões de ação e layout pensado para desktop.',
-    src: '/images/kreui-desktop.svg',
-    width: 420,
-    height: 720,
-  },
-  {
-    title: 'Popup de boas-vindas',
-    description: 'Balão de convite com call-to-action para iniciar a conversa.',
-    src: '/images/kreui-popup.svg',
-    width: 320,
-    height: 260,
-  },
-  {
-    title: 'Modo mobile',
-    description: 'Interface em tela cheia respeitando áreas seguras e teclado virtual.',
-    src: '/images/kreui-mobile.svg',
-    width: 360,
-    height: 720,
+    title: 'Experiência principal',
+    description:
+      'Janela flutuante completa, base para visualizar o widget em desktop e derivar variações responsivas e popups.',
+    src: '/images/kreui-desktop.png',
+    width: 2719,
+    height: 1455,
+    aspectRatio: 2719 / 1455,
+    tag: 'Desktop',
+    meta: 'Tela ampla',
+    gradient: 'from-[#0454a0]/16 via-white to-[#2bb071]/12',
+    notes: [
+      'Integra o widget flutuante, cabeçalho com métricas e timeline completa de mensagens.',
+      'Para mobile, utilize altura total (`NEXT_PUBLIC_CHAT_WIDGET_HEIGHT=1`) e tokens responsivos para bordas e tipografia.',
+      'Ative o popup de convite com `NEXT_PUBLIC_CHAT_SHOW_WELCOME_POPUP` e personalize `NEXT_PUBLIC_CHAT_POPUP_MESSAGE` para replicar a abordagem compacta.',
+    ],
   },
 ];
+
+type ScreenshotItem = (typeof screenshots)[number];
+
+function ScreenshotCard({
+  item,
+  priority,
+  onExpand,
+}: {
+  item: ScreenshotItem;
+  priority?: boolean;
+  onExpand?: (item: ScreenshotItem) => void;
+}) {
+  const imageSizes = '(min-width: 1280px) 70vw, (min-width: 768px) 80vw, 100vw';
+  const aspectRatio = item.aspectRatio ?? item.width / item.height;
+
+  return (
+    <article
+      className={clsx(
+        'h-full rounded-[28px] border border-[#e1efff] bg-gradient-to-br p-6 shadow-[0_24px_48px_rgba(4,84,160,0.12)] md:p-10',
+        item.gradient,
+      )}
+    >
+      <div className="flex flex-col gap-5 md:grid md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] md:items-start md:gap-8">
+        <div className="flex items-center justify-between md:col-span-2">
+          <span className="inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#0454a0]">
+            {item.tag}
+          </span>
+          {item.meta ? (
+            <span className="hidden text-[10px] font-medium uppercase tracking-[0.18em] text-[#0454a0]/75 md:inline">
+              {item.meta}
+            </span>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={() => onExpand?.(item)}
+          className="group relative block w-full md:col-start-2 md:row-start-2 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#0454a0]/40 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent"
+          aria-label={`Expandir ${item.title}`}
+        >
+          <div className="overflow-hidden rounded-2xl border border-white/80 bg-white/90 shadow-inner transition-transform group-hover:scale-[1.01] md:rounded-3xl">
+            <div
+              className="relative flex items-center justify-center bg-gradient-to-br from-white via-[#f4f8ff] to-[#e6f3ff]"
+              style={{ aspectRatio }}
+            >
+              <Image
+                src={item.src}
+                alt={item.title}
+                fill
+                sizes={imageSizes}
+                className="object-contain"
+                priority={priority}
+              />
+              <span className="pointer-events-none absolute inset-0 hidden items-center justify-center bg-[#0b1e3c]/40 text-xs font-medium uppercase tracking-[0.18em] text-white transition group-hover:flex group-focus-visible:flex">
+                Ampliar
+              </span>
+            </div>
+          </div>
+        </button>
+        <div className="mt-4 md:col-start-1 md:row-start-2 md:mt-0">
+          <h3 className="text-lg font-semibold text-chat-text">{item.title}</h3>
+          <p className="mt-2 text-sm text-[#4d5b78]">{item.description}</p>
+          {item.notes ? (
+            <ul className="mt-4 space-y-2">
+              {item.notes.map((note) => (
+                <li key={note} className="flex items-start gap-2 text-xs leading-relaxed text-[#4d5b78]">
+                  <span className="mt-1 block h-1.5 w-1.5 rounded-full bg-[#2bb071]" />
+                  <span>{note}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      </div>
+    </article>
+  );
+}
 
 const codeSample = `import ChatWidget from '@/components/chat/ChatWidget';
 
@@ -121,6 +197,32 @@ export default function Page() {
 }`;
 
 export default function HomePage() {
+  const primaryScreenshot = screenshots[0];
+  const [activeScreenshot, setActiveScreenshot] = useState<ScreenshotItem | null>(null);
+  const expandedAspectRatio = activeScreenshot
+    ? activeScreenshot.aspectRatio ?? activeScreenshot.width / activeScreenshot.height
+    : 1;
+
+  useEffect(() => {
+    if (!activeScreenshot) {
+      document.body.style.removeProperty('overflow');
+      return undefined;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveScreenshot(null);
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.removeProperty('overflow');
+    };
+  }, [activeScreenshot]);
+
   return (
     <main className="relative mx-auto flex min-h-screen w-full flex-col gap-16 bg-gradient-to-br from-[#f5faff] via-white to-[#f0f8ff] px-6 py-16 md:max-w-6xl">
       <section className="rounded-[32px] border border-white/60 bg-white/80 p-10 shadow-[0_40px_80px_rgba(4,84,160,0.15)] backdrop-blur">
@@ -131,8 +233,8 @@ export default function HomePage() {
           OpenAI Assistants - KrêUI
         </h1>
         <p className="mt-4 max-w-3xl text-lg leading-relaxed text-[#4d5b78]">
-          Uma interface de chat moderna, opinionada e pronta para produção construída sobre a Assistants API. Inspire-se na estética Kre+, reutilize os
-          componentes em múltiplos produtos e ofereça uma experiência conversacional consistente.
+          Uma interface de chat moderna e pronta para produção construída sobre a Assistants API. Inspire-se na estética Kre+, reutilizando os
+          componentes em múltiplos produtos e oferecendo uma experiência conversacional consistente.
         </p>
         <p className="mt-3 text-sm font-medium uppercase tracking-[0.18em] text-[#0454a0]">
           Construído com o Codex · modelo gpt-5-codex-high
@@ -173,7 +275,7 @@ export default function HomePage() {
         <div className="rounded-[28px] border border-[#e1efff] bg-white/70 p-8 shadow-[0_24px_48px_rgba(4,84,160,0.08)] backdrop-blur">
           <h2 className="text-2xl font-semibold text-chat-text">Por que KrêUI?</h2>
           <p className="mt-3 text-base text-[#4d5b78]">
-            O pacote consolida o que usamos internamente na Kre+ para entregar um canal conversacional confiável. A estrutura modular facilita adicionar
+            O pacote consolida e é utilizado em diversos produtos para entregar um canal conversacional confiável. A estrutura modular facilita adicionar
             novas features sem reescrever fluxos de atendimento.
           </p>
           <ul className="mt-6 space-y-4">
@@ -204,35 +306,18 @@ export default function HomePage() {
           <div>
             <h2 className="text-2xl font-semibold text-chat-text">Como o chat se apresenta</h2>
             <p className="mt-2 max-w-2xl text-base text-[#4d5b78]">
-              Layout consistente no desktop e mobile, com popup de convite e tema adaptável. Use as imagens como referência e substitua por capturas reais do seu produto.
+              Layout consistente no desktop e mobile, com popup de convite e tema adaptável. A captura abaixo serve como referência principal e inclui notas de como replicar as variações móveis e de convite.
             </p>
           </div>
           <span className="inline-flex items-center rounded-full border border-[#e1efff] bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0454a0]">
             Screenshots
           </span>
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
-          {screenshots.map((item) => (
-            <div
-              key={item.title}
-              className="flex flex-col justify-between rounded-[28px] border border-[#e1efff] bg-gradient-to-br from-[#0454a0]/12 via-white to-[#2bb071]/12 p-6 shadow-[0_24px_48px_rgba(4,84,160,0.12)]"
-            >
-              <div className="overflow-hidden rounded-2xl border border-white/80 bg-white/90 shadow-inner">
-                <Image
-                  src={item.src}
-                  alt={item.title}
-                  width={item.width}
-                  height={item.height}
-                  className="h-auto w-full"
-                />
-              </div>
-              <div className="mt-4">
-                <h3 className="text-lg font-semibold text-chat-text">{item.title}</h3>
-                <p className="mt-2 text-sm text-[#4d5b78]">{item.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        {primaryScreenshot ? (
+          <div className="mx-auto max-w-5xl">
+            <ScreenshotCard item={primaryScreenshot} priority onExpand={(next) => setActiveScreenshot(next)} />
+          </div>
+        ) : null}
       </section>
 
       <section id="instalacao" className="rounded-[32px] border border-[#e1efff] bg-white/80 p-10 shadow-[0_30px_60px_rgba(4,84,160,0.12)] backdrop-blur">
@@ -293,6 +378,50 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {activeScreenshot ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={activeScreenshot.title}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1e3c]/80 px-4 py-10 backdrop-blur"
+          onClick={() => setActiveScreenshot(null)}
+        >
+          <div
+            className="relative w-full max-w-5xl rounded-[32px] border border-white/20 bg-[#051329]/95 p-6 shadow-[0_30px_90px_rgba(4,84,160,0.45)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveScreenshot(null)}
+              className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-white transition hover:bg-white/20"
+              autoFocus
+            >
+              Fechar
+            </button>
+            <div className="overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-br from-white/5 via-white/10 to-white/5">
+              <div
+                className="relative flex items-center justify-center"
+                style={{ aspectRatio: expandedAspectRatio }}
+              >
+                <Image
+                  src={activeScreenshot.src}
+                  alt={activeScreenshot.title}
+                  fill
+                  sizes="100vw"
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </div>
+            <div className="mt-6 space-y-2">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#96c5ff]">{activeScreenshot.tag}</p>
+              <h3 className="text-xl font-semibold text-white">{activeScreenshot.title}</h3>
+              <p className="text-sm text-white/80">{activeScreenshot.description}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <ChatWidget
         placeholder="Escreva a sua questão sobre a plataforma..."
